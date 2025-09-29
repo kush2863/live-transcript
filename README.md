@@ -121,6 +121,7 @@ Dual structure prompt (comprehensive + meeting). Post‑process: strip code fenc
 | `/api/audio/jobs/:id` | GET | Single job incl. report when ready |
 | `/api/audio/upload` | POST | Multipart upload |
 | `/api/audio/process-audio` | POST | Upload + immediately start processing pipeline |
+| `/api/audio/process-audio` | POST | Upload + immediately start processing pipeline |
 | `/api/audio/process/:id` | POST | (Optional trigger) |
 
 Standard response: `{ success, data?, error? }`.
@@ -138,8 +139,10 @@ ASSEMBLYAI_API_KEY=...
 ```
 Frontend:
 ```
-NEXT_PUBLIC_SUPABASE_URL=...
-NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+NEXT_PUBLIC_API_URL=...
+NEXT_PUBLIC_MAX_FILE_SIZE=...
+NEXT_PUBLIC_MAX_FILE_SIZE=...
+NEXT_PUBLIC_ALLOWED_AUDIO_TYPES=...
 ```
 
 ## 10. Local Development Workflow
@@ -173,7 +176,15 @@ PDF export, webhooks (replace polling), streaming transcript, entity enrichment,
 
 
 Challenge :- Integrating Assembly AI and Gemini and orchestrating the whole process as it was my first time doing it.
+## 15. Key Challenges & Resolutions
+
+
+
+Challenge :- Integrating Assembly AI and Gemini and orchestrating the whole process as it was my first time doing it.
 
 ### Summary
 The system delivers a reproducible pipeline: upload → transcription (AssemblyAI) → AI analysis (Gemini) → normalized `report_data` → minimal structured report UI. Architectural decisions prioritize clarity, future scalability (swap polling for events, move storage to cloud), and resilience against AI output variability.
 
+
+### System Design 
+<img width="1696" height="762" alt="Screenshot 2025-09-30 at 2 29 51 AM" src="https://github.com/user-attachments/assets/4a93d2e7-cda6-4b23-9be6-06245a47f059" />
