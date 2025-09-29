@@ -263,4 +263,22 @@ export class AuthController {
       });
     }
   }
+
+  // Verify JWT token and return user info
+  static async verifyToken(req, res) {
+    try {
+      // If we reach here, the token is valid (middleware already verified it)
+      // req.user is set by the auth middleware
+      res.json({
+        success: true,
+        user: req.user
+      });
+    } catch (error) {
+      console.error('Verify token error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Internal server error'
+      });
+    }
+  }
 }

@@ -1,231 +1,190 @@
-# LivePrompt Authentication System
+<div align="center">
 
-A full-stack authentication system built with Next.js, Express.js, Supabase, and Shadcn UI.
+# LiveTranscript Reporter
 
-## 🚀 Features
+_Upload audio → Transcribe & Analyze → Generate Structured Conversation Report._
 
-- **Frontend**: Next.js 15 with TypeScript and Shadcn UI components
-- **Backend**: Express.js API with Supabase authentication
-- **Authentication**: Complete signup/signin flow with JWT tokens
-- **Form Validation**: Zod schema validation with react-hook-form
-- **Protected Routes**: Middleware-based route protection
-- **Modern UI**: Beautiful, accessible components from Shadcn UI
-- **Type Safety**: Full TypeScript support throughout
+</div>
 
-## 📁 Project Structure
-
-```
-liveprompt_tasl/
-├── backend/
-│   ├── index.js              # Main server file
-│   ├── supabase.js           # Supabase client configuration
-│   ├── routes/
-│   │   └── auth.js           # Authentication routes
-│   ├── middleware/
-│   │   └── auth.js           # Authentication middleware
-│   ├── package.json
-│   └── .env                  # Backend environment variables
-├── frontend/
-│   ├── app/
-│   │   ├── layout.tsx        # Root layout
-│   │   ├── page.tsx          # Main page with auth flow
-│   │   └── globals.css       # Global styles
-│   ├── components/
-│   │   ├── ui/               # Shadcn UI components
-│   │   ├── AuthContainer.tsx # Auth flow container
-│   │   ├── LoginForm.tsx     # Login form with validation
-│   │   ├── SignupForm.tsx    # Signup form with validation
-│   │   └── Dashboard.tsx     # Protected dashboard
-│   ├── lib/
-│   │   ├── api.ts            # API client configuration
-│   │   ├── hooks/
-│   │   │   └── useApi.ts     # Custom API hooks
-│   │   └── services/
-│   │       └── auth.ts       # Authentication service
-│   ├── package.json
-│   └── .env.local            # Frontend environment variables
-```
-
-## 🛠 Setup Instructions
-
-### 1. Backend Setup
+## 0. Quick Start
 
 ```bash
+# Backend
 cd backend
-npm install
-```
+npm install && npm run dev
 
-Create `.env` file with your Supabase credentials:
-```env
-# Supabase Configuration
-SUPABASE_URL=https://your-project-id.supabase.co
-SUPABASE_ANON_KEY=your_supabase_anon_key_here
-
-# Server Configuration
-PORT=4000
-```
-
-Start the backend server:
-```bash
-npm run dev
-```
-
-### 2. Frontend Setup
-
-```bash
+# Frontend (in separate terminal)
 cd frontend
-npm install
+npm install && npm run dev
+```
+Visit: http://localhost:3000 (dashboard, jobs, upload) /documentation for in‑app docs.
+
+Environment variables: see [Environment](#9-environment-variables)
+
+---
+
+## 1. Purpose
+End‑to‑end system to ingest an audio file, transcribe it with speaker diarization, run AI analysis, and surface a professional structured report containing:
+1. Conversation Title
+2. Executive Summary
+3. Key Discussion Points
+4. Action Items & Next Steps
+5. Full Diarized Transcript
+
+## 2. High‑Level Architecture
+```
+Client (Next.js App)
+	│
+	├── Auth (Supabase Auth)
+	│
+	├── Upload Audio  ──► Backend (Express API)
+	│                         │
+	│                         ├── Store raw file (filesystem or Supabase Storage)
+	│                         ├── Create audio_jobs row (status=uploaded)
+	│                         ├── Orchestration Service
+	│                         │     1. Transcribe (AssemblyAI)
+	│                         │     2. AI Analysis + Summary (Gemini)
+	│                         │     3. Build report_data JSON
+	│                         │     4. Update audio_jobs (status=completed)
+	│                         │
+	│                         └── Persist structured results
+	│
+	└── Poll / Fetch Job & Report Data ► Render Minimal Report UI
 ```
 
-Update `.env.local` with backend URL:
-```env
-# Backend API Configuration
-NEXT_PUBLIC_API_URL=http://localhost:4000/api/v1
+## 3. Technology Stack
+| Layer | Tech |
+|-------|------|
+| Frontend | Next.js (App Router), TypeScript, Tailwind (utility classes) |
+| Auth | Supabase Auth |
+| Backend | Node.js + Express |
+| DB | Postgres (Supabase) |
+| Transcription | AssemblyAI (speaker diarization) |
+| AI Analysis | Google Gemini |
+| Storage | Local `uploads/` (swappable) |
 
-# Environment
-NODE_ENV=development
-```
+### 3.1 Why These Choices
+* **Split Frontend / Backend:** Easier to scale CPU/IO heavy transcription & AI steps separately from edge‑optimized UI.
+* **Orchestration Service:** Central point for status transitions, retries, and normalization.
+* **Denormalized `report_data`:** One read = full report; UI stays stateless & render‑only.
+* **LLM Normalization Layer:** Shields UI from prompt/format drift; future model swaps require minimal changes.
 
-Start the frontend development server:
-```bash
-npm run dev
-```
+## 4. Data Model (Key Fields)
+`audio_jobs` core columns: `id, user_id, filename, status, transcript_data, analysis_data, report_data, error_message, processing_started_at, processing_completed_at, created_at, updated_at` plus optional telemetry (duration, confidence, speakers, etc.).
 
-## 🔌 API Endpoints
-
-### Authentication Routes
-
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| POST | `/api/v1/auth/signup` | Create new user account | No |
-| POST | `/api/v1/auth/signin` | Sign in existing user | No |
-| POST | `/api/v1/auth/signout` | Sign out user | Yes |
-| GET | `/api/v1/auth/me` | Get current user info | Yes |
-| POST | `/api/v1/auth/refresh` | Refresh access token | No |
-
-### Other Routes
-
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| GET | `/` | API health check with endpoints list | No |
-| GET | `/test-db` | Test Supabase database connection | No |
-| GET | `/api/v1/protected` | Example protected route | Yes |
-
-## 📝 Request/Response Examples
-
-### Signup Request
-```bash
-POST /api/v1/auth/signup
-Content-Type: application/json
-
+### 4.1 `report_data` Shape
+```jsonc
 {
-  "email": "user@example.com",
-  "password": "securepassword",
-  "name": "John Doe"
+	"title": "Conversation Analysis Report",
+	"executive_summary": "3–4 sentence narrative...",
+	"key_points": ["Point 1", "Point 2"],
+	"action_items": [
+		{ "task": "Do X", "assignee": "Alice", "priority": "high", "due_date": "2025-10-05" }
+	],
+	"full_transcript": [ { "speaker": "A", "start": 0, "end": 3200, "text": "Hello", "confidence": 0.93 } ],
+	"metadata": { "duration": 187, "speakers_count": 2, "processed_at": "2025-09-30T...Z" }
 }
 ```
 
-### Signup Response
-```json
-{
-  "success": true,
-  "message": "User created successfully! Please check your email to confirm your account.",
-  "data": {
-    "user": {
-      "id": "uuid",
-      "email": "user@example.com",
-      "created_at": "2025-01-01T00:00:00Z"
-    },
-    "session": {
-      "access_token": "jwt_token",
-      "refresh_token": "refresh_token",
-      "expires_in": 3600
-    }
-  }
-}
+### 4.2 Action Item Normalization
+LLM may return strings or heterogenous objects; all coerced to:
+```ts
+interface ActionItem { task: string; assignee?: string | null; priority: 'high' | 'medium' | 'low'; due_date?: string | null; }
 ```
 
-### Signin Request
-```bash
-POST /api/v1/auth/signin
-Content-Type: application/json
+## 5. Processing Pipeline
+1. Upload → row created (`uploaded`).
+2. Transcription (AssemblyAI) → `transcribing`.
+3. Store transcript → `analyzing`.
+4. Gemini analysis + summary.
+5. Normalize & assemble `report_data` (title, summaries, key points, action items, transcript segments, metadata).
+6. Mark `completed` or `failed` (with `error_message`).
 
-{
-  "email": "user@example.com",
-  "password": "securepassword"
-}
+## 6. AI Prompt Strategy
+Dual structure prompt (comprehensive + meeting). Post‑process: strip code fences, parse JSON, normalize action items. Fallback logic ensures UI always has arrays (possibly empty) rather than null.
+
+## 7. Frontend Routes
+| Route | Description |
+|-------|-------------|
+| `/dashboard` | Overview stats & recent jobs |
+| `/upload` | Upload audio file |
+| `/jobs` | List & filter jobs |
+| `/jobs/[id]` | Detailed job status & raw JSON previews |
+| `/report/[id]` | Final structured report (5 required sections) |
+| `/documentation` | In‑app condensed documentation (mirrors this README) |
+| `/login` `/register` | Auth flows |
+
+## 8. API (Express)
+| Endpoint | Method | Notes |
+|----------|--------|-------|
+| `/api/audio/jobs` | GET | User jobs list |
+| `/api/audio/jobs/:id` | GET | Single job incl. report when ready |
+| `/api/audio/upload` | POST | Multipart upload |
+| `/api/audio/process-audio` | POST | Upload + immediately start processing pipeline |
+| `/api/audio/process-audio` | POST | Upload + immediately start processing pipeline |
+| `/api/audio/process/:id` | POST | (Optional trigger) |
+
+Standard response: `{ success, data?, error? }`.
+
+## 9. Environment Variables
+Backend:
+```
+PORT=4000
+FRONTEND_URL=http://localhost:3000
+SUPABASE_URL=...
+SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
+GEMINI_API_KEY=...
+ASSEMBLYAI_API_KEY=...
+```
+Frontend:
+```
+NEXT_PUBLIC_API_URL=...
+NEXT_PUBLIC_MAX_FILE_SIZE=...
+NEXT_PUBLIC_MAX_FILE_SIZE=...
+NEXT_PUBLIC_ALLOWED_AUDIO_TYPES=...
 ```
 
-### Protected Route Request
-```bash
-GET /api/v1/protected
-Authorization: Bearer your_jwt_token
-```
+## 10. Local Development Workflow
+* Start backend & frontend (see Quick Start).
+* Upload file → observe status progression in `/jobs`.
+* Once completed, open `/report/<jobId>`.
 
-## 🎨 Frontend Components
+## 11. Error Handling & Resilience
+Graceful fallbacks: placeholders instead of crashing UI; `failed` state with message for any stage exception.
 
-### AuthContainer
-Main component that switches between login and signup forms based on user interaction.
+## 12. Testing Suggestions
+| Layer | What |
+|-------|------|
+| Unit | `formatActionItems`, title generation, transcript normalization |
+| Integration | Upload → complete pipeline |
+| Edge | Long audio, single speaker, low confidence |
 
-### LoginForm
-- Built with Shadcn UI components
-- Zod schema validation
-- React Hook Form integration
-- Loading states and error handling
+## 13. Troubleshooting Cheatsheet
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Empty report fields | Analysis not stored | Check backend logs & API keys |
+| 404 on report | Job not completed | Wait / verify status |
+| No action items | LLM output unstructured | Reprocess, confirm normalization |
+| One speaker only | No diarization | Ensure AssemblyAI speaker labels enabled |
 
-### SignupForm
-- Form validation with password confirmation
-- Proper error display
-- Responsive design
+## 14. Future Enhancements
+PDF export, webhooks (replace polling), streaming transcript, entity enrichment, multi‑tenant sharing, transcript confidence heat‑map.
 
-### Dashboard
-- Protected user dashboard
-- User information display
-- Protected route testing
-- Logout functionality
+## 15. Key Challenges & Resolutions
 
-## 🔐 Authentication Flow
 
-1. **User Registration**: User fills signup form → Backend creates Supabase user → Returns JWT tokens
-2. **User Login**: User fills login form → Backend authenticates with Supabase → Returns JWT tokens
-3. **Token Storage**: Frontend stores access_token in localStorage
-4. **API Requests**: All API requests include Bearer token in Authorization header
-5. **Route Protection**: Backend middleware validates JWT on protected routes
-6. **Auto-logout**: Invalid/expired tokens trigger automatic logout
 
-## 🛡 Security Features
+Challenge :- Integrating Assembly AI and Gemini and orchestrating the whole process as it was my first time doing it.
+## 15. Key Challenges & Resolutions
 
-- **JWT Token Authentication**: Secure token-based authentication
-- **Password Validation**: Minimum 6 characters with confirmation
-- **Email Validation**: Proper email format validation
-- **CORS Protection**: Configured for specific origins
-- **Input Sanitization**: Zod schema validation on frontend
-- **Error Handling**: Comprehensive error messages without exposing sensitive data
 
-## 🎯 Key Technologies
 
-- **Frontend**: Next.js 15, TypeScript, Tailwind CSS, Shadcn UI, React Hook Form, Zod
-- **Backend**: Express.js, Supabase, CORS, dotenv
-- **Authentication**: Supabase Auth with JWT tokens
-- **Styling**: Tailwind CSS with Shadcn UI component system
-- **Validation**: Zod schemas with react-hook-form integration
+Challenge :- Integrating Assembly AI and Gemini and orchestrating the whole process as it was my first time doing it.
 
-## 🚀 Getting Started
+### Summary
+The system delivers a reproducible pipeline: upload → transcription (AssemblyAI) → AI analysis (Gemini) → normalized `report_data` → minimal structured report UI. Architectural decisions prioritize clarity, future scalability (swap polling for events, move storage to cloud), and resilience against AI output variability.
 
-1. Clone the repository
-2. Set up Supabase project and get credentials
-3. Configure backend `.env` with Supabase credentials
-4. Configure frontend `.env.local` with backend URL
-5. Install dependencies and start both servers
-6. Visit `http://localhost:3000` to see the auth flow
 
-## 📱 Usage
-
-1. **Visit the app** - Shows login form by default
-2. **Create Account** - Click "Sign up" to create new account
-3. **Sign In** - Use email/password to authenticate
-4. **Dashboard** - Access protected dashboard after authentication
-5. **Test Features** - Try protected route calls and user info display
-6. **Sign Out** - Logout and return to login screen
-
-The system provides a complete, production-ready authentication flow with modern UI components and robust error handling.
+### System Design 
+<img width="1696" height="762" alt="Screenshot 2025-09-30 at 2 29 51 AM" src="https://github.com/user-attachments/assets/4a93d2e7-cda6-4b23-9be6-06245a47f059" />

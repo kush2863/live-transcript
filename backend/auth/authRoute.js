@@ -11,6 +11,9 @@ router.post('/logout', AuthController.logout);
 router.post('/forgot-password', AuthController.forgotPassword);
 router.post('/refresh-token', AuthController.refreshToken);
 
+// Auth verification route
+router.get('/verify', authenticateUser, AuthController.verifyToken);
+
 // Protected routes
 router.get('/profile', authenticateUser, AuthController.getProfile);
 router.put('/update-password', authenticateUser, AuthController.updatePassword);
