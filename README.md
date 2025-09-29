@@ -179,3 +179,6 @@ Challenge :- Integrating Assembly AI and Gemini and orchestrating the whole proc
 ### Summary
 The system delivers a reproducible pipeline: upload → transcription (AssemblyAI) → AI analysis (Gemini) → normalized `report_data` → minimal structured report UI. Architectural decisions prioritize clarity, future scalability (swap polling for events, move storage to cloud), and resilience against AI output variability.
 
+### System Design 
+<img width="1696" height="762" alt="Screenshot 2025-09-30 at 2 29 51 AM" src="https://github.com/user-attachments/assets/4a93d2e7-cda6-4b23-9be6-06245a47f059" />
+
