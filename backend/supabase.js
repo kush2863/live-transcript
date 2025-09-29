@@ -10,6 +10,7 @@ const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey) {
   console.warn('⚠️  Missing Supabase environment variables. Please set SUPABASE_URL, SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY in your .env file');
   console.warn('Authentication features will not work properly without valid Supabase configuration.');
+  console.warn('Current values:', { supabaseUrl: !!supabaseUrl, supabaseServiceKey: !!supabaseServiceKey, supabaseAnonKey: !!supabaseAnonKey });
 }
 
 let supabaseAdmin = null;
@@ -27,6 +28,21 @@ if (supabaseUrl && supabaseServiceKey && supabaseAnonKey) {
 
   // Client for handling user auth
   supabase = createClient(supabaseUrl, supabaseAnonKey);
+}
+
+// Helper function to create a user-scoped client for RLS operations
+export function createUserClient(accessToken) {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Supabase configuration is missing');
+  }
+  
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    }
+  });
 }
 
 export { supabaseAdmin, supabase };

@@ -20,12 +20,36 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-  // Check if the file is an audio file
-  const allowedMimes = ['audio/mpeg', 'audio/wav', 'audio/mp4', 'audio/m4a', 'audio/ogg'];
-  if (allowedMimes.includes(file.mimetype)) {
+  // More comprehensive list of audio MIME types
+  const allowedMimes = [
+    'audio/mpeg', 'audio/mp3',           // MP3 files
+    'audio/wav', 'audio/x-wav',          // WAV files  
+    'audio/mp4', 'audio/m4a', 'audio/x-m4a', 'audio/aac', // MP4/M4A files
+    'audio/ogg', 'audio/opus',           // OGG files
+    'audio/webm',                        // WebM audio
+    'audio/flac',                        // FLAC files
+    'audio/aiff', 'audio/x-aiff',        // AIFF files
+    'audio/3gpp', 'audio/3gpp2',         // 3GP files
+    'application/octet-stream'           // Fallback for binary files
+  ];
+  
+  // Common audio file extensions
+  const allowedExtensions = ['.mp3', '.wav', '.m4a', '.mp4', '.aac', '.ogg', '.flac', '.aiff', '.3gp'];
+  
+  const fileExtension = path.extname(file.originalname).toLowerCase();
+  
+  // Check if the file is an audio file (by MIME type, general audio type, or extension)
+  const isAudioMime = allowedMimes.includes(file.mimetype);
+  const isGeneralAudio = file.mimetype.startsWith('audio/');
+  const hasAudioExtension = allowedExtensions.includes(fileExtension);
+  
+  console.log(`File validation - Name: ${file.originalname}, MIME: ${file.mimetype}, Extension: ${fileExtension}`);
+  
+  if (isAudioMime || isGeneralAudio || hasAudioExtension) {
     cb(null, true);
   } else {
-    cb(new Error('Only audio files are allowed'), false);
+    console.log(`File rejected - MIME: ${file.mimetype}, Extension: ${fileExtension}`);
+    cb(new Error(`Only audio files are allowed. Received: ${file.mimetype} with extension ${fileExtension}`), false);
   }
 };
 

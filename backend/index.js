@@ -3,6 +3,7 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
 import authRoutes from './auth/authRoute.js';
+import audioJobRoutes from './audioJobs/audioJobRoute.js';
 
 // Load environment variables
 dotenv.config();
@@ -20,6 +21,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/audio', audioJobRoutes);
 
 // Health check route
 app.get('/', (req, res) => {
