@@ -120,6 +120,7 @@ Dual structure prompt (comprehensive + meeting). Post‑process: strip code fenc
 | `/api/audio/jobs` | GET | User jobs list |
 | `/api/audio/jobs/:id` | GET | Single job incl. report when ready |
 | `/api/audio/upload` | POST | Multipart upload |
+| `/api/audio/process-audio` | POST | Upload + immediately start processing pipeline |
 | `/api/audio/process/:id` | POST | (Optional trigger) |
 
 Standard response: `{ success, data?, error? }`.
