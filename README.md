@@ -120,6 +120,7 @@ Dual structure prompt (comprehensive + meeting). Post‑process: strip code fenc
 | `/api/audio/jobs` | GET | User jobs list |
 | `/api/audio/jobs/:id` | GET | Single job incl. report when ready |
 | `/api/audio/upload` | POST | Multipart upload |
+| `/api/audio/process-audio` | POST | Upload + immediately start processing pipeline |
 | `/api/audio/process/:id` | POST | (Optional trigger) |
 
 Standard response: `{ success, data?, error? }`.
@@ -167,31 +168,12 @@ Graceful fallbacks: placeholders instead of crashing UI; `failed` state with mes
 ## 14. Future Enhancements
 PDF export, webhooks (replace polling), streaming transcript, entity enrichment, multi‑tenant sharing, transcript confidence heat‑map.
 
-## 15. Key Challenges (Plain Language) & Resolutions
+## 15. Key Challenges & Resolutions
 
-Below are the real-world bumps hit while wiring AssemblyAI (async transcription + diarization) together with Gemini (LLM summarization) and shaping the output for a clean UI. Written in plain language so future contributors instantly “get it”.
 
-| Challenge | What Made It Tricky | Plain-Language Fix | Longer-Term Idea |
-|-----------|--------------------|--------------------|------------------|
-| Two Different Speeds | Transcription can take 30–90s while the user waits | Store a job row immediately and show status badges that advance (uploaded → transcribing → analyzing → completed) | Switch from polling to webhooks / server-sent events |
-| Diarization & Timing | AssemblyAI returns millisecond offsets + speaker labels; LLM doesn’t need all raw detail but UI does | Keep raw `transcript_data` separate; build a condensed, speaker‑friendly array for `report_data.full_transcript` | Add segmentation caching & word‑level confidence visualization |
-| LLM Output Drift | Gemini sometimes returns Markdown, prose, or malformed JSON | Post‑process: strip fences, attempt JSON.parse, coerce fields to arrays, fallback to empty lists | Define a JSON Schema + validate; add automatic re‑prompt on parse failure |
-| Action Items Messiness | Model may produce bullet strings, partial sentences, or nested objects | Normalization util turns anything into `{ task, assignee, priority, due_date }` with safe defaults | Add assignee name resolution / user directory lookup |
-| Error Surfacing | Silent failures made the UI look “empty” | Capture `error_message` in `audio_jobs`; show explicit failed state | Per‑stage retry counters + backoff |
-| Key Leakage Risk | Service role & API keys accidentally committed once locally | `.env` files git‑ignored; added `.env.example`; secrets referenced only via `process.env` | Add secret scanning pre‑commit hook (e.g. gitleaks) |
-| User Perception During Wait | Blank screen felt broken during long transcription | Jobs list + status chips + skeleton report | Real-time incremental transcript stream |
-| Prompt Evolvability | Changing prompts previously broke frontend expectations | Introduced stable `report_data` contract decoupled from raw `analysis_data` | Version `report_data` schema for migrations |
 
-### Narrative Explanation (Super Simple)
-1. We upload a file and immediately create a database record so the user has something to look at.
-2. AssemblyAI works in the background; we keep asking it “done yet?” until it says yes.
-3. Once we have the words + who spoke when, we hand a cleaned transcript to Gemini with a clear prompt asking for: summary, key points, action items.
-4. Gemini sometimes answers a little creatively, so we clean/normalize everything into one predictable JSON blob called `report_data`.
-5. The frontend renders only that blob. If anything failed, we show a friendly status instead of crashing.
-
-### Security & Secrets Note
-The file `backend/.env` should never be committed. Use `backend/.env.example` (sanitized) for sharing required keys. All code references environment variables—no hard-coded secret strings remain in source.
+Challenge :- Integrating Assembly AI and Gemini and orchestrating the whole process as it was my first time doing it.
 
 ### Summary
-The system delivers a reproducible pipeline: upload → transcription (AssemblyAI) → AI analysis (Gemini) → normalized `report_data` → minimal structured report UI. Architectural decisions prioritize clarity, future scalability (swap polling for events, move storage to cloud), resilience against AI output variability, and protection against secret leakage.
+The system delivers a reproducible pipeline: upload → transcription (AssemblyAI) → AI analysis (Gemini) → normalized `report_data` → minimal structured report UI. Architectural decisions prioritize clarity, future scalability (swap polling for events, move storage to cloud), and resilience against AI output variability.
 
