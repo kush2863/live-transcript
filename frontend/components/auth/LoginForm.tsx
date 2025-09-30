@@ -49,7 +49,7 @@ export const LoginForm: React.FC = () => {
           </div>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
-          <Button type="submit" className="w-full" disabled={loading}>{loading ? 'Signing in...' : 'Sign In'}</Button>
+          <Button type="submit" className="w-full mt-4" disabled={loading}>{loading ? 'Signing in...' : 'Sign In'}</Button>
           <div className="text-sm text-center space-y-2">
             <Link href="/forgot-password" className="text-blue-600 hover:underline">Forgot your password?</Link>
             <div>Don't have an account? <Link href="/register" className="text-blue-600 hover:underline">Sign up</Link></div>
