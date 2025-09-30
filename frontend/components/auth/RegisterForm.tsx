@@ -76,7 +76,7 @@ export const RegisterForm: React.FC = () => {
           </div>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
-          <Button type="submit" className="w-full" disabled={loading}>{loading ? 'Creating account...' : 'Create Account'}</Button>
+          <Button type="submit" className="w-full mt-4" disabled={loading}>{loading ? 'Creating account...' : 'Create Account'}</Button>
           <div className="text-sm text-center">Already have an account? <Link href="/login" className="text-blue-600 hover:underline">Sign in</Link></div>
         </CardFooter>
       </form>
